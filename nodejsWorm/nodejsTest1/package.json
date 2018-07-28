@@ -1,0 +1,15 @@
+{
+  "name": "",
+  "version": "",
+  "dependencies": {
+    "async": "^2.6.1",
+    "cheerio": "^1.0.0-rc.2",
+    "eventproxy": "^1.0.0",
+    "express": "^4.16.3",
+    "http": "0.0.0",
+    "nightmare": "^3.0.1",
+    "request": "^2.87.0",
+    "superagent": "^3.8.3",
+    "url": "^0.11.0"
+  }
+}
