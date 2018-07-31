@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=yes" />
+	<title>coloring life</title>
+	<script src="phaser.min.js"></script>
+	<style type="text/css">
+		@media all and (orientation:landscape);
+	</style>
+</head>
+<body>
+	<div id="game-canvas"></div>
+	<script type="text/javascript">
+
+		//dimension
+		var gameWidth = 376;//376
+		var gameHeight = 724;//724
+		var beginX = gameWidth*0.05;
+		var beginY = gameHeight*0.15;
+		var cellwidth = 18;
+		var totalRow = 19;
+		var totalCol = 23;
+
+		//UI
+		var bg;
+		var PaintLayer;//绘制层组
+		var currentColor;
+
+		//data
+		var markNum;
+		var colorType;
+		var colorIdx = [
+			[0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0],
+			[0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0],
+			[0,1,1,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,0],
+			[1,1,1,0,2,2,2,1,1,1,0,0,0,1,1,1,2,2,2,1,1,1,1],
+			[1,1,0,2,2,2,2,2,1,1,1,0,1,1,1,2,2,2,2,2,1,1,1],
+			[1,1,0,2,2,0,2,2,2,1,1,1,1,1,2,2,2,2,2,2,2,1,1],
+			[1,1,2,2,0,3,3,2,2,2,1,1,1,2,2,2,3,3,2,2,2,1,1],
+			[1,1,1,2,2,3,3,3,2,2,2,1,2,2,2,3,3,3,2,2,1,1,1],
+			[0,1,1,1,2,2,3,3,3,3,2,2,2,3,3,3,3,2,2,1,1,1,0],
+			[0,0,1,1,1,2,2,3,3,3,3,2,3,3,3,3,2,2,1,1,1,0,0],
+			[0,0,0,1,1,1,2,2,3,3,3,3,3,3,3,2,2,1,1,1,0,0,0],
+			[0,0,0,0,1,1,1,2,2,3,3,3,3,3,2,2,1,1,1,0,0,0,0],
+			[0,0,0,0,0,1,1,1,2,2,3,3,3,2,2,1,1,1,0,0,0,0,0],
+			[0,0,0,0,0,0,1,1,1,2,2,3,2,2,1,1,1,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,1,1,1,2,2,2,1,1,1,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,1,1,1,2,1,1,1,0,0,0,0,0,0,0,0],		
+			[0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0]
+		];
+		var state = [     //状态数组，0:无色不可涂,1:有色不可涂,2:可涂,3:颜色涂对不可再涂
+			[0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0],
+			[0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0],
+			[0,1,1,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,0],
+			[1,1,1,0,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1],
+			[1,1,0,1,1,1,1,2,2,2,2,0,2,2,2,2,1,1,1,1,1,1,1],
+			[1,1,0,1,1,0,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1],
+			[1,1,1,1,0,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1],
+			[1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1],
+			[0,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,0],
+			[0,0,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,0,0],
+			[0,0,0,1,1,1,1,2,2,2,2,2,2,2,2,2,1,1,1,1,0,0,0],
+			[0,0,0,0,1,1,1,1,2,2,2,2,2,2,2,1,1,1,1,0,0,0,0],
+			[0,0,0,0,0,1,1,1,1,2,2,2,2,2,1,1,1,1,0,0,0,0,0],
+			[0,0,0,0,0,0,1,1,1,1,2,2,2,1,1,1,1,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,1,1,1,1,2,1,1,1,1,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0]
+		];
+		var colorArray = {
+			0:0xffffff,//白
+			1:0x979797,//外灰
+			2:0xb2b2b2,//中灰
+			3:0xcacaca,//内灰
+			4:0xa6a6a6,//外高亮
+			5:0xc3c3c3,//中高亮
+			6:0xe2e2e2,//内高亮
+			7:0xf14058,//外红
+			8:0xf67082,//中红
+			9:0xf99aa7,//内红
+			10:0x707070
+		};
+
+
+		window.onload = function(){
+			var game = new Phaser.Game(gameWidth,gameHeight,Phaser.AUTO,'game-canvas',
+				{preload:preload,create:create,update:update});
+
+			// console.log(document.body.clientWidth​,window.devicePixelRatio);
+			// //画布重新布局
+			window.onresize=function(){
+				game.scale.setGameSize(document.body.clientWidth*window.devicePixelRatio,document.body.clientHeight*window.devicePixelRatio);
+				game.scale.refresh();
+			};
+
+			function preload(){
+				game.load.image('bgPic','bgPic.png');
+				game.load.image('num0','num0.png');
+				game.load.image('num1','num1.png');
+				game.load.image('num2','num2.png');
+			}
+
+
+			function create(){
+				this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;//确保游戏给定符合的尺寸
+				this.scale.pagealignhorizontally = true;
+				this.scale.pagealignvertically = true;
+				PaintLayer = game.add.group();
+				initUI();
+				
+			
+				game.input.onDown.add(function(pointer){
+					moveToPaint(pointer.x,pointer.y);
+				})
+			}
+
+			function update(){
+
+			}
+
+			function initUI(){
+				bg = game.add.sprite(0,0,'bgPic');
+				PaintLayer.addChild(bg);
+				createPalette(beginX,gameHeight*0.7);
+				freshDrawBoard(1);
+			}
+
+			function RcToXy(row,col){
+				var tempx,tempy;
+				if(row!==undefined&&col!==undefined
+					&&0<=row&&row<totalRow
+					&&0<=col&&col<totalCol){
+					tempx = beginX+col*cellwidth;
+					tempy = beginY+row*cellwidth;
+				}
+				return{
+					x:tempx,
+					y:tempy
+				};
+			}
+
+			//坐标转换,x坐标转换成列，y坐标转换成行
+			function transX(x){
+				var tempcol;
+				if(beginX<x&&x<beginX+totalCol*cellwidth){
+					tempcol = Math.floor((x-beginX)/cellwidth);
+					return tempcol;
+				}
+			}	
+
+			//返回行
+			function transY(y){
+				var temprow;
+				if(beginY<y&&y<beginY+totalRow*cellwidth){
+					temprow = Math.floor((y-beginY)/cellwidth);
+					return temprow;
+				}
+			}
+
+			//格子
+			function creategrid(){
+				//水平线
+				var s_XH,s_YH,e_XH,s_XV,s_YV,e_YV;
+				var isFirst_h = false;
+				var line = game.add.graphics(beginX,beginY);
+				line.z = 0;
+				for(let i=0;i<totalRow;i++){
+					isFirst_h = false;
+					for(let j=0;j<totalCol;j++){
+						if(state[i][j]!==0){
+							// console.log(',,,,,,,,,,,,,,,')
+							if(!isFirst_h){
+								s_XH = RcToXy(i,j).x;
+								s_YH = RcToXy(i,j).y;
+								isFirst_h = true;
+							}
+						}else{
+							if(j<=11) continue;
+							else{
+								e_XH = RcToXy(i,j).x;
+								break;
+							}
+						}
+						// console.log(i,j,s_XH,s_YH);
+						// line.lineStyle(1,'#000000',1);
+						line.moveTo(s_XH,s_YH);
+						line.lineTo(e_XH,s_YH);
+					}
+				}
+
+				//垂直线
+				for(let i=0;i<totalCol;i++){
+					isFirst_h = false;
+					for(let j=0;j<totalRow;j++){
+						//每次分别计算开始位置和结束位置
+						if(state[j][i]!==0){
+							if(!isFirst_h){
+								s_XV = RcToXy(j,i).x;
+								s_YV = RcToXy(j,i).y;
+								isFirst_h = true;
+							}
+						}else if(state[j][i]===0){
+							if(j<=11) continue;
+							else{
+								e_YV = RcToXy(j+1,i).y;
+								break;
+							}
+						}
+						// line.lineStyle(1,0x000000,1);
+						line.moveTo(s_XV,s_YV);
+						line.lineTo(s_XV,e_YV);
+						
+					}
+				}
+			}
+
+			function paint(row,col,color,alpha){
+				if(row!==undefined&&col!==undefined&&0<=row&&row<=totalRow
+					&&0<=col&&col<=totalCol&&color!==undefined){
+					let tempx = RcToXy(row,col).x;
+					let tempy = RcToXy(row,col).y;
+					let rect  = game.add.graphics();
+					rect.z = 0;
+					if(alpha===undefined)
+						rect.beginFill(color);
+					else
+						rect.beginFill(color,alpha);
+					rect.drawRect(tempx,tempy,cellwidth,cellwidth);
+					rect.endFill();
+				}
+			}
+
+			function addNumber(row,col,num){
+				if(row!==undefined&&col!==undefined&&0<=row&&row<=totalRow
+					&&0<=col&&col<=totalCol&&num!==undefined&&num!==0){
+					let x = RcToXy(row,col).x + cellwidth/2;
+					let y = RcToXy(row,col).y + cellwidth/2;
+					let style ={font: cellwidth+"px SimHei", fill: "#000000", align: "center"};
+					let text = game.add.text(x,y,num,style);
+					text.anchor.set(0.5);
+					text.scale.set(0.65)
+				}
+			}
+
+			function freshDrawBoard(step){
+				for(let i=0;i<totalRow;i++){
+					for(let j=0;j<totalCol;j++){
+						switch(step){
+							case 1:
+								prePaint(i,j,state[i][j]);
+								break;
+							case 2:
+								highLight(i,j,currentColor-2*3);
+								break;
+							default:
+								break;
+						}
+					}
+				}
+			}
+
+			//颜色选择器
+			function createPalette(x,y){
+				let scale_btn = 0.2
+				for(let i=0;i<3;i++){
+					var btn_select = game.add.sprite(x+i*200*scale_btn*2,y,'num'+i);
+					bg.addChild(btn_select);
+					btn_select.scale.set(scale_btn);
+					btn_select.inputEnabled = true;
+					btn_select.events.onInputDown.add(function(){
+						currentColor = i+1+2*3;
+						freshDrawBoard(2);
+					},this);
+				}
+			}
+			//预绘制
+			function prePaint(row,col,idx){
+				if(row!=undefined&&col!==undefined&&idx!==0){
+					switch(idx){
+						case 1:
+							// console.log(row,col,colorArray[colorIdx[row][col]+2*3],'llllllllllllllllll')
+							paint(row,col,colorArray[colorIdx[row][col]+2*3]);
+							colorIdx[row][col] = colorIdx[row][col]+2*3;//更新颜色数组
+							break;
+						case 2:
+							paint(row,col,colorArray[colorIdx[row][col]]);
+							addNumber(row,col,colorIdx[row][col]);
+							break;
+						default:
+							break;
+					}
+				}
+			}
+			//高亮
+			function highLight(row,col,idx){
+				console.log('高亮nnnnnnnnnnnnnnnnnnnn')
+				if(row!==undefined&&col!==undefined&&
+					state[row][col]===2){
+					if(colorIdx[row][col]===idx){
+						paint(row,col,colorArray[10]);
+						addNumber(row,col,colorIdx[row][col]);
+					}else if(colorIdx[row][col]!==idx){
+						paint(row,col,colorArray[colorIdx[row][col]+3]);
+						addNumber(row,col,colorIdx[row][col]);
+					}
+					
+				}
+			}
+
+			function selectPaint(row,col,color){
+				if(row!==undefined&&col!==undefined
+					&&color!==undefined&&state[row][col]===2){
+					if(colorIdx[row][col]+2*3===color){
+						paint(row,col,colorArray[color]);
+						state[row][col] = 3;
+					}else if(colorIdx[row][col]+2*3!==color){
+						paint(row,col,colorArray[color],0.5);
+						addNumber(row,col,colorIdx[row][col]);
+
+
+					}
+				}
+			}
+
+			function moveToPaint(x,y){
+				var tmpRow = transY(y);
+				var tmpCol = transX(x);
+				selectPaint(tmpRow,tmpCol,currentColor);
+			}
+
+			function checkSuccess(){
+				var successCount = 0;
+				for(let i=0;i<totalRow;i++){
+					for(let j=0;j<totalCol;j++){
+						if(state[i][j]!==0){
+							let idx = colorIdx[i][j]+2*3;
+							if(colorIdx[i][j]===idx)
+								successCount++;
+						}else if(state[i][j]===0&&colorIdx[i][j]===0)
+								successCount++;
+					}
+				}
+				return successCount===totalCol*totalRow? true:false;
+			}
+		}
+	</script>
+</body>
+</html>
