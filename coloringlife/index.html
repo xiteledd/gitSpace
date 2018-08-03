@@ -38,6 +38,7 @@
 		var guideHand;
 		var handActTimer;
 		var beginTimer;
+		var btn_continue;
 
 		//data
 		var game;
@@ -141,8 +142,11 @@
 				game.load.image('logo','logo.png');
 				game.load.image('download','download.png');
 				game.load.image('hand','hand.png');
-				game.load.image('play','play.png');
-				game.load.json('playMesh','play.json');
+				// game.load.image('play','play.png');
+				// game.load.json('playMesh','play.json');
+				// game.load.atlasXML('play','main.png','main.xml');
+				game.load.atlasJSONHash('play','main2.png','main2.json');
+
 			}
 
 
@@ -509,11 +513,17 @@
 				// })
 				// tweenTodown.repeat(-1);
 
-				var btn_continue = game.add.creature(game.world.width/2,game.world.height/2+200,'play','playMesh');
-				btn_continue.scale_btn.set(scale_btn);
-				btn_continue.anchor.set(0.5);
-				btn_continue.play(true);
-			}
+				// var btn_continue = game.add.sprite(game.world.width/2,game.world.height/2+200,'play');
+				// btn_continue.animations.add('flash');
+				// btn_continue.scale.set(scale_btn);
+				// btn_continue.anchor.set(0.5);
+				// btn_continue.animations.play('flash',30,true);
+
+				btn_continue = game.add.sprite(game.world.width/2,game.world.height/2+200,'play','play/play-animation_0');
+				btn_continue.scale.set(scale_btn);
+
+			 	btn_continue.animations.add('btn_play', Phaser.Animation.generateFrameNames('play/', 0, 6, '', 4), 10, true, false);
+			}	btn_continue.animations.play('btn_play');
 
 			function closePopLayer(){
 				if(gameOvermask ===undefined){
