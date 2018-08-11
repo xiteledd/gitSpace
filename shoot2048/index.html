@@ -75,7 +75,17 @@
 			}
 
 			this.create = function(){
-				// game.input
+				game.input.onDown.add(function(pointer){
+					isTouch =true;
+				});
+
+				game.input.onUp.add(function(pointer){
+					isTouch = false;
+				});
+
+				game.input.addMoveCallback(function(pointer,x,y,isTap){
+					
+				});
 			}
 
 			this.update = function(){
