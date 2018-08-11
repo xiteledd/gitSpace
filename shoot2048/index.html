@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>shoot2048</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+	<script src="phaser.min.js"></script>
+	<style type="text/css">
+		#game-canvas{
+			position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%,-50%);
+            -webkit-overflow-scrolling: touch;
+		};
+		@media all and (orientation:landscape){
+
+		}
+
+	</style>
+</head>
+<body>
+	<div id="game-canvas"></div>
+	<script type="text/javascript">
+		//dimension
+		var gamewidth = 376;
+		var gameheight = 724;
+	
+		//定义game对象
+		var game = new Phaser.Game(gamewidth,gameheight,Phaser.AUTO,'game-canvas');
+
+		game.State = {};
+		//主场景
+		game.State.Main = function(){
+			//varies
+			var gameLayer;
+			var blockArray;
+			var blockArrayDown;
+			var cellwidth = 60;
+			var totalRow = 6;
+			var totalCol = 5;
+			var squareSeed;
+			var isTouch = false;
+			var state = [
+				[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]
+			];
+			var colorArray = {  //定义一组color，存放方框背景色
+				2:0x18e3c4,
+				4:0x51a6e1,
+				8:0x01cedb,
+				16:0xffd849,
+				32:0xeecc77,
+				64:0xffbb77,
+				128:0xff9966,
+				256:0xff7755,
+				512:0xc264bd,
+				1024:0xff5590,
+				2048:0xff416e
+			}
+
+			this.preload = function(){
+				if(!game.device.desktop){
+					this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;//确保游戏给定符合的尺寸
+					this.scale.pagealignhorizontally = true;
+					this.scale.pagealignvertically = true;
+					this.scale.refresh();
+				}
+				game.load.image('backdrop','res/backdrop.png');
+				game.load.image('block3','res/block3.png');
+				game.load.image('partition','res/partition.png');
+				game.load.image('install','res/install.png');
+				game.load.image('icon','res/icon.png');
+				game.load.image('block2','res/block2.png');
+				game.load.image('block1','res/block1.png');
+			}
+
+			this.create = function(){
+				// game.input
+			}
+
+			this.update = function(){
+
+			}
+			//初始化UI
+			function initUI(){
+				blockArray = new Array();
+				gameLayer  = game.ad.sprite(0,0);
+				gameLayer.z = 0;
+				var bg = game.add.sprite(0,0,'backdrop'),
+				for(let i =0;i<totalCol;i++){  //上面的block锚点在左下角
+					var block = game.add.sprite(0,0,'block2');
+					block.reset(i*block.width+5,block.height);
+					block.anchor.set(0,1);
+					gameLayer.addChild(block);
+					blockArray.push(block);
+				}
+				var	stripe1 = game.add.sprite(0,0,'block3'),
+				 	stripe2 = game.add.sprite(0,game.world.height,'block3'),
+				 	install = game.add.button(0,0,'install',getDownload,this),
+				 	icon = game.add.sprite(0,game.world.width,'icon');
+				 	for(let i = 0;i<totalCol;i++){
+				 		var blockDown = game.add.sprite(0,0,'block1');
+				 		blockDown.reset(i*blockDown.width+5,stripe2.height+5);
+				 		blockDown.anchor.set(0,1);
+				 		gameLayer.addChild(blockDown);
+				 		blockArrayDown.push(blockDown);
+				 	}
+
+				 	stripe2.anchor.set(0,1);
+				 	icon.anchor.set(1,0);
+
+				 	gameLayer.addChild(bg);
+			  		gameLayer.addChild(stripe1);
+			  		gameLayer.addChild(stripe2);
+			  		gameLayer.addChild(install);
+			  		gameLayer.addChild(icon);
+			}
+
+			//产生一个方块
+			function createSquare(row,col,id,isplayaciton){
+				var square = game.add.sprite();
+				square.reset(rcToxy(row,col).x,rcToxy(row,col).y);
+				var squarebg = game.add.graphics();
+				squarebg.anchor.set(0.5);
+				squarebg.beginFill(colorArray[id]);
+				squarebg.drawRoundedRect(0,0,cellwidth,cellwidth,20);
+				squarebg.endFill();
+				square.addChild(squarebg);
+				//方块上的数字
+				var squareTextstyle = {font:cellwidth*0.5+"px",fontWeight:"bold",fill:"#ffffff",align: "center"};
+				var squareText = game.add.text(-cellwidth/2,-cellwidth/2,id,squareTextstyle);
+				squareText.setTextBounds(0,0,cellwidth,cellwidth);
+				square.addChild(squareText);
+				square.scale.set(0);
+				//是否播动画
+				if(isplayaciton===undefined||!isplayaciton){
+					square.scale.set(1);
+				}else{
+					game.add.tween(square.scale).to({x:1,y:1},100,Phaser.Easing.Sinusoidal.In,true);
+				}
+				this.squareArray[row][col].value = id;
+				this.squareArray[row][col].sprite = square;
+				state[row][col] = 1;
+				square.anchor.set(0.5,0.5);
+				gameLayer.addChild()
+			}
+
+			//行列、坐标转换
+			function rcToxy(row,col){
+				var beginX,beginY;
+				if(blockArray!==undefined&&blockArray[0]!==undefined){
+					beginX = blockArray[0].x;
+					beginY = blockArray[0].y;
+				}
+				var tempx = beginX+col*cellwidth+cellwidth/2+5;
+				var tempy = beginY+row*cellwidth+cellwidth/2+5;
+				return{
+					x:tempx,
+					y:tempy;
+				}
+			}
+
+			function transX(x){   //返回列
+				var tempCol;
+				if(blockDown[0].x<=x&&x<blockDown[4]){
+					tempCol = Math.floor((x -blockDown[0].x)/cellwidth);
+				}
+				return tempCol;
+			}
+
+			function transY(y){		//返回行
+				var tempRow;
+				if(blockArray[0].y<y&&y<blockDown[0].y){
+					tempRow = Math.floor((y-blockArray[0].y)/cellwidth);
+				}
+				return tempRow;
+			}
+
+
+			function initSquareArray(){
+				createSquare(0,0,256);
+				createSquare(0,1,1024);
+				createSquare(0,2,512);
+				createSquare(0,3,32);
+				createSquare(0,4,1024);
+				createSquare(1,0,32);
+				createSquare(1,2,128);
+				createSquare(1,2,64);
+				createSquare(1,3,128);
+				createSquare(2,1,16);
+				createSquare(2,2,8);
+				createSquare(2,3,16);
+				createSquare(3,2,2);
+			}
+
+			//方块消失动画
+			function swipeAction(row,col){
+				if(row!==undefined&&col!==undefined&&this.squareArray[row][col]!==undefined){
+					var sprite = this.squareArray[row][col].sprite;
+					game.add.tween(sprite.scale).to({x:[1.1,0],y:[1.1,0]},100,Phaser.Easing.Sinusoidal.In,true);
+					sprite.kill();
+					state[row][col] = 0;
+					this.squareArray[row][col] = undefined;
+				}
+			}
+
+			//生成新方块动画
+			function generateAction(row,col,idx,isUP){
+				if(row!==undefined&&col!==undefined){
+					if(this.squareArray[row][col]!==undefined){
+						var Tempsprite = this.squareArray[row][col].sprite
+						Tempsprite.kill();
+					}
+					createSquare(row,col,idx,true);
+					//上移
+					if(this.squareArray[row-1][col]===undefined&&state[row-1][col]===0
+						&&this.squareArray[row][col]!==undefined&&playaction==true){
+						var tempy = rcToxy(row-1,col).y;
+						var tempSP = this.squareArray[row][col];
+						game.add.tween(tempSP.sprite).to({y:tempy},100,Phaser.Easing.Linear.None,true);
+						state[row][col] = 0;
+						state[row-1][col] = 1;
+						this.squareArray[row-1][col] = tempSP;
+						this.squareArray[row][col] = undefined;
+					}
+				}
+			}
+
+			function findSameidx(row,col){
+				var isup = false,isdown = false,isleft = false,isright = false,type,value;					
+				if(row!==undefined&&col!==undefined&&this.squareArray[row][col]!==undefined){
+					var idx = this.squareArray[row][col].value;
+						value = this.squareArray[row][col].value;
+					if(this.squareArray[row][col+1]!==undefined&&this.squareArray[row][col+1]===idx){
+						isright = true;
+						value = value*2;
+					}
+					if(this.squareArray[row+1][col]!==undefined&&this.squareArray[row+1][col]===idx){
+						isdown = true;
+						value = value*2;
+					}
+					if(this.squareArray[row][col-1]!==undefined&&this.squareArray[row][col-1]===idx){
+						isleft = true;
+						value = value*2;
+					}
+					if(this.squareArray[row-1][col]!==undefined&&this.squareArray[row-1][col]!==idx){
+						isup = true;
+						value = value*2;
+					}
+
+					if(isdown==true){
+						if(isright==true)type = DOWN_RIHGT;
+						if(isleft==true) type = DOWN_LEFT;
+						if(isup==true) type = UP_DOWN;
+						type = DOWN;					
+					}
+					if(isup==true){
+						if(isleft==true)type = UP_LEFT;
+						if(isright==true) type = UP_RIGHT;
+						type = UP;
+					}
+					if(isleft){
+						if(isright==true)type = LEFT_RIGHT;
+						type = LEFT;
+					}
+					if(isright){
+						type = RIGHT;
+					}
+					if(type!==undefined){
+						this.squareArray[row][col].type = type;
+						this.squareArray[row][col].value = value;
+					}
+				}
+			}
+
+			function merge(row,col){
+				var type = this.squareArray[row][col].type;
+				var idx = this.squareArray[row][col].value;
+				console.log(type,idx,'fffffffffffffffff');
+				if(row!==undefined&&col!==undefined&&this.squareArray[row][col].value!==undefined){
+					switch(type){
+						case UP:
+							swipeAction(row-1,col);
+							generateAction(row,col,idx,true);
+							break;
+						case DOWN:
+							swipeAction(row+1,col);
+							generateAction(row,col,idx);
+							break;
+						case LEFT:
+							swipeAction(row,col-1);
+							generateAction(row,col,idx);
+							break;
+						case RIGHT:
+							swipeAction(row,col+1);
+							generateAction(row,col,idx);
+							break;
+						case LEFT_RIGHT:
+							swipeAction(row,col-1);
+							swipeAction(row,col+1);
+							generateAction(row,col,idx);
+							break;
+						case UP_DOWN:
+							swipeAction(row-1,col);
+							swipeAction(row+1,col);
+							generateAction(row,col,idx,true);
+							break;
+						case UP_LEFT:
+							swipeAction(row-1,col);
+							swipeAction(row,col-1);
+							generateAction(row,col,idx,true);
+							break;
+						case UP_RIGHT:
+							swipeAction(row-1,col);
+							swipeAction(row,col+1);
+							generateAction(row,col,idx,true);
+							break;
+						case DOWN_LEFT:
+							swipeAction(row+1,col);
+							swipeAction(row,col-1);
+							generateAction(row,col,idx);
+							break;
+						case DOWN_RIHGT:
+							swipeAction(row+1,col);
+							swipeAction(row,col+1);
+							generateAction(row,col,idx);
+							break;
+						default:
+							break;
+					}
+				}
+			}
+
+			//砖块下移
+			function DownBlock(){
+				if (blockArray!==undefined){
+					var length = blockArray.length;
+					var tempy = blockArray[0].y;
+					tempy +=2;
+					for(let i = 0;i<length;i++){
+						blockArray[i].reset(blockArray[i].x,tempy);
+					}
+					if(blockArray[length-1].y+cellwidth>yyyy){
+						var tty = blockArray[length-1].y;
+						for(let i = 0;i<totalCol;i++){
+							var block = game.add.sprite(0,0,'block2');
+							block.reset(i*block.width+5,tty);
+							block.anchor.set(0,1);
+							gameLayer.addChild(block);
+							blockArray.push(block);
+						}
+					}
+				}
+			}
+
+			//方块向下移动
+			function DownSquare(){
+				for(let i=0;i<totalRow;i++){
+					for(let j=0;j<totalCol;j++){
+						if(this.squareArray[i][j]!==undefined){
+							this.squareArray[i][j].sprite.reset(rcToxy(i,y).x,rcToxy(i,j).y);
+						}
+					}
+				}
+			}
+
+			function createSeed(idx){
+				var sprite = game.add.sprite(0,0);
+				sprite.reset(blockDown[2].x+cellwidth/2,blockDown[2].y+cellwidth/2);
+				var seedRect = game.add.graphics();
+				seedRect.beginFill(colorArray[idx]);
+				seedRect.drawRoundedRect(0,0,cellwidth,cellwidth,20);
+				seedRect.endFill();
+				seedRect.anchor.set(0.5);
+				sprite.addChild(seedRect);
+				//添加数值
+				var fontstyle = {font:cellwidth*0.5+"px",fontWeight:"bold",fill:"#ffffff",align: "center"};
+				var seedText = game.add.text(-cellwidth/2,-cellwidth/2,idx,fontstyle);
+				seedText.setTextBounds(0,0,cellwidth,cellwidth);
+				sprite.addChild(seedText);
+				squareSeed.value = idx;
+				squareSeed.sprite = sprite;
+			}
+
+			//bullet
+			function shootSquare(x,y){
+				var tempcol = transX(x);
+				var temprow = transY(y);
+				var Desrow,Descol;
+				 for(let i=0;i<totalRow;i++){
+					if(this.squareArray[i][tempcol]===undefined){
+						var tempx=rcToxy(i,tempcol).x;
+						var tempx=rcToxy(i,tempcol).y;
+						game.add.tween(squareSeed.sprite).to({x:tempx,y:tempy},100,Phaser.Easing.Linear.None,true);
+						Desrow = transY(tempy);
+						Descol = transX(tempx);
+						break;
+					}
+				}
+				if(Desrow!==undefined&&Descol!==undefined){
+					this.squareArray[Desrow][Desrow] = squareSeed;
+				}
+			}
+
+			function moveSquare(x,y){
+				var tempCol = transX(x);
+				squareSeed.sprite.reset(blockDown[tempCol].x+cellwidth,squareSeed.y);
+			}
+
+			function getDownload = function(){
+				console.log()
+			}
+		}	
+
+		game.State.gameover = function(){
+
+		}
+
+	</script>
+</body>
+</html>
+
+
+
+
+<!--   
+                           _ooOoo_
+                          o8888888o
+                          88" . "88
+                          (| -_- |)
+                          O\  =  /O
+                       ____/`---'\____
+                     .'  \\|     |//  `.
+                    /  \\|||  :  |||//  \
+                   /  _||||| -:- |||||-  \
+                   |   | \\\  -  /// |   |
+                   | \_|  ''\---/''  |   |
+                   \  .-\__  `-`  ___/-. /
+                 ___`. .'  /--.--\  `. . __
+              ."" '<  `.___\_<|>_/___.'  >'"".
+             | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+             \  \ `-.   \_ __\ /__ _/   .-` /  /
+        ======`-.____`-.___\_____/___.-`____.-'======
+                           `=---='
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                 佛祖保佑       永无BUG 
+ -->
